@@ -1,0 +1,9 @@
+cat > .gitignore << EOF
+venv/
+__pycache__/
+*.pyc
+.env
+chroma/
+data/raw/
+*.txt
+EOF
