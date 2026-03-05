@@ -335,12 +335,14 @@ if best_distance > 250:
 ```
 
 ### 🏗 技術堆疊（Tech Stack）
+```
 元件	技術
 語言	Python
 Embedding	Ollama (nomic-embed-text)
 LLM	Ollama (llama3.2)
 Vector DB	ChromaDB (持久化模式)
 資料來源	PostgreSQL Documentation
+```
 
 ### 📂 專案目錄
 ```bash
