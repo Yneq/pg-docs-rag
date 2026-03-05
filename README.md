@@ -56,7 +56,7 @@ Document → Clean → Chunk → Embed → Store → Retrieve → Ground → Gen
 ---
 
 ## 📂 Project Structure
-
+</> Plain text
 pg-docs-rag/
 ├── data/
 │   └── raw/                 # Raw PostgreSQL documentation
