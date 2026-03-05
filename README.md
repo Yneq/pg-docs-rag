@@ -57,15 +57,16 @@ Document → Clean → Chunk → Embed → Store → Retrieve → Ground → Gen
 
 ## 📂 Project Structure
 
-
 pg-docs-rag/
+├── data/
+│   └── raw/                 # Raw PostgreSQL documentation
 │
-├── data/raw/ # Raw documentation files
 ├── scripts/
-│ ├── ingest_docs.py # HTML cleaning + embedding pipeline
-│ ├── demo_rag.py # Query + retrieval + LLM
+│   ├── ingest_docs.py       # Build vector database from docs
+│   └── demo_rag.py          # Ask questions using RAG
 │
-├── chroma/ # Vector database (generated)
+├── chroma/                  # Chroma vector store
+│
 ├── requirements.txt
 └── README.md
 
