@@ -258,7 +258,7 @@ Designed for clarity and interview discussion rather than production scale
 文件 → 清理 → Chunk → Embedding → 儲存 → 檢索 → Ground → 生成回答
 
 流程圖：
-
+```
 Document ingestion
 ↓
 Chunking
@@ -274,7 +274,7 @@ Guardrail (距離檢查)
 LLM (llama3.2)
 ↓
 Answer
-
+```
 ### 1️⃣ 文件收集與處理（Data Ingestion）
 
 資料來源：PostgreSQL 官方文件
@@ -287,6 +287,7 @@ Embedding：使用 nomic-embed-text via Ollama
 
 儲存：ChromaDB（持久化向量資料庫）
 
+
 ### 2️⃣ 檢索（Retrieval）
 
 User query 也會產生 embedding
@@ -295,6 +296,7 @@ Top-K 相似 chunks 透過向量相似度搜尋
 
 顯示距離方便調試與 guardrail
 
+
 ### 3️⃣ Grounded Generation
 
 將檢索到的 chunks 注入 prompt
@@ -302,6 +304,7 @@ Top-K 相似 chunks 透過向量相似度搜尋
 使用 LLM (llama3.2 via Ollama) 生成回答
 
 Prompt 強制模型只能使用 context 內容
+
 
 ### 4️⃣ CLI 互動 Demo
 
@@ -316,6 +319,7 @@ Ask a PostgreSQL question:
 
 Answer:
 The SELECT statement retrieves rows from a table or view...
+
 
 ### 5️⃣ Guardrail（防止亂回答）
 
@@ -369,7 +373,8 @@ python scripts/ingest_docs.py
 
 儲存到 ChromaDB
 
-###2️⃣ 問問題 Demo
+
+### 2️⃣ 問問題 Demo
 ```bash
 python scripts/demo_rag.py
 ```
@@ -378,7 +383,7 @@ python scripts/demo_rag.py
 What does SELECT do in PostgreSQL?
 
 流程：
-
+```
 Embed query
 ↓
 檢索 top-K 相關 chunks
@@ -386,8 +391,9 @@ Embed query
 注入 context 到 prompt
 ↓
 LLM 生成回答
+```
 
-###3️⃣ CLI 互動問答
+### 3️⃣ CLI 互動問答
 ```bash
 python scripts/chat.py
 ```
@@ -397,7 +403,7 @@ python scripts/chat.py
 
 Guardrail 自動拒答不相關問題
 
-###🧩 設計決策
+### 🧩 設計決策
 
 為什麼使用本地模型？
 
@@ -425,7 +431,7 @@ Guardrail 自動拒答不相關問題
 
 面試講解方便
 
-###🛠 工程細節
+### 🛠 工程細節
 
 持久化向量存儲
 
