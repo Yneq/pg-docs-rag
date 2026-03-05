@@ -233,7 +233,7 @@ CPU inference (slower on lightweight machines)
 Designed for clarity and interview discussion rather than production scale
 
 
-專案目標
+###專案目標
 
 建立一個 最小可行但具 production 思維的 RAG 系統：
 
@@ -243,7 +243,7 @@ Designed for clarity and interview discussion rather than production scale
 
 展示向量檢索 + LLM grounding
 
-🧠 系統架構
+###🧠 系統架構
 文件 → 清理 → Chunk → Embedding → 儲存 → 檢索 → Ground → 生成回答
 
 流程圖：
@@ -264,7 +264,7 @@ LLM (llama3.2)
 ↓
 Answer
 
-1️⃣ 文件收集與處理（Data Ingestion）
+###1️⃣ 文件收集與處理（Data Ingestion）
 
 資料來源：PostgreSQL 官方文件
 
@@ -276,7 +276,7 @@ Embedding：使用 nomic-embed-text via Ollama
 
 儲存：ChromaDB（持久化向量資料庫）
 
-2️⃣ 檢索（Retrieval）
+###2️⃣ 檢索（Retrieval）
 
 User query 也會產生 embedding
 
@@ -284,7 +284,7 @@ Top-K 相似 chunks 透過向量相似度搜尋
 
 顯示距離方便調試與 guardrail
 
-3️⃣ Grounded Generation
+###3️⃣ Grounded Generation
 
 將檢索到的 chunks 注入 prompt
 
@@ -292,7 +292,7 @@ Top-K 相似 chunks 透過向量相似度搜尋
 
 Prompt 強制模型只能使用 context 內容
 
-4️⃣ CLI 互動 Demo
+###4️⃣ CLI 互動 Demo
 
 執行：
 ```bash
@@ -306,7 +306,7 @@ Ask a PostgreSQL question:
 Answer:
 The SELECT statement retrieves rows from a table or view...
 
-5️⃣ Guardrail（防止亂回答）
+###5️⃣ Guardrail（防止亂回答）
 
 檢查向量距離（distance）
 
@@ -319,7 +319,7 @@ if best_distance > 250:
     continue
 ```
 
-🏗 技術堆疊（Tech Stack）
+###🏗 技術堆疊（Tech Stack）
 元件	技術
 語言	Python
 Embedding	Ollama (nomic-embed-text)
@@ -327,7 +327,7 @@ LLM	Ollama (llama3.2)
 Vector DB	ChromaDB (持久化模式)
 資料來源	PostgreSQL Documentation
 
-📂 專案目錄
+###📂 專案目錄
 ```bash
 pg-docs-rag/
 ├── data/
@@ -341,8 +341,8 @@ pg-docs-rag/
 └── README.md
 ```
 
-🚀 使用說明
-1️⃣ 建立向量資料庫
+###🚀 使用說明
+###1️⃣ 建立向量資料庫
 ```bash
 python scripts/ingest_docs.py
 ```
@@ -358,7 +358,7 @@ python scripts/ingest_docs.py
 
 儲存到 ChromaDB
 
-2️⃣ 問問題 Demo
+###2️⃣ 問問題 Demo
 ```bash
 python scripts/demo_rag.py
 ```
@@ -376,7 +376,7 @@ Embed query
 ↓
 LLM 生成回答
 
-3️⃣ CLI 互動問答
+###3️⃣ CLI 互動問答
 ```bash
 python scripts/chat.py
 ```
@@ -386,7 +386,7 @@ python scripts/chat.py
 
 Guardrail 自動拒答不相關問題
 
-🧩 設計決策
+###🧩 設計決策
 
 為什麼使用本地模型？
 
@@ -414,7 +414,7 @@ Guardrail 自動拒答不相關問題
 
 面試講解方便
 
-🛠 工程細節
+###🛠 工程細節
 
 持久化向量存儲
 
@@ -428,7 +428,7 @@ Chunk overlap 策略
 
 Guardrail 減少 hallucination
 
-📊 專案現狀
+###📊 專案現狀
 
 約 1500+ chunks 已索引
 
@@ -438,7 +438,7 @@ Guardrail 減少 hallucination
 
 CLI 互動 Demo 可用
 
-🔮 潛在升級
+###🔮 潛在升級
 
 Guardrail 閾值微調
 
