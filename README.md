@@ -341,8 +341,8 @@ pg-docs-rag/
 └── README.md
 ```
 
-###🚀 使用說明
-###1️⃣ 建立向量資料庫
+### 🚀 使用說明
+### 1️⃣ 建立向量資料庫
 ```bash
 python scripts/ingest_docs.py
 ```
@@ -428,7 +428,7 @@ Chunk overlap 策略
 
 Guardrail 減少 hallucination
 
-###📊 專案現狀
+### 📊 專案現狀
 
 約 1500+ chunks 已索引
 
@@ -438,7 +438,7 @@ Guardrail 減少 hallucination
 
 CLI 互動 Demo 可用
 
-###🔮 潛在升級
+### 🔮 潛在升級
 
 Guardrail 閾值微調
 
