@@ -1,10 +1,10 @@
-pg-docs-rag
+# pg-docs-rag
 
 A local Retrieval-Augmented Generation (RAG) system built using PostgreSQL official documentation as the knowledge base.
 
 This project demonstrates an end-to-end RAG pipeline running fully locally (no external APIs), focusing on system design clarity rather than UI complexity.
 
-🎯 Project Goal
+### 🎯 Project Goal
 
 Build a minimal but production-style RAG system that:
 
@@ -16,11 +16,12 @@ Demonstrates vector search + LLM grounding
 
 Is easy to explain in an interview
 
-🧠 System Architecture
+### 🧠 System Architecture
+```
 Document → Clean → Chunk → Embed → Store → Retrieve → Ground → Generate
-
+```
 Pipeline:
-
+```
 Document ingestion
 ↓
 Chunking
@@ -36,7 +37,9 @@ Guardrail
 LLM (llama3.2)
 ↓
 Answer
-1️⃣ Data Ingestion
+```
+
+### 1️⃣ Data Ingestion
 
 Source: PostgreSQL official documentation
 
@@ -48,7 +51,7 @@ Embeddings generated using nomic-embed-text via Ollama
 
 Stored in ChromaDB (persistent vector store)
 
-2️⃣ Retrieval
+### 2️⃣ Retrieval
 
 User query embedded using the same embedding model
 
@@ -56,7 +59,7 @@ Top-K similar chunks retrieved via vector similarity search
 
 Similarity scores inspected for debugging
 
-3️⃣ Grounded Generation
+### 3️⃣ Grounded Generation
 
 Retrieved chunks injected into prompt
 
@@ -64,23 +67,24 @@ LLM (llama3.2 via Ollama) generates answer
 
 Prompt constrains model to use only retrieved context
 
-4️⃣ CLI Chat Demo
+### 4️⃣ CLI Chat Demo
 
 Run the chatbot:
-
+```bash
 python scripts/chat.py
-
+```
 Example:
 
 Ask a PostgreSQL question:
-
+```
 What does SELECT do in PostgreSQL?
-
+```
 Answer:
-
+```
 The SELECT statement retrieves rows from a table or view...
+```
 
-5️⃣ Guardrails
+### 5️⃣ Guardrails
 
 To reduce hallucinations, the system checks vector similarity before sending context to the LLM.
 
@@ -88,7 +92,9 @@ If the closest chunk distance exceeds a threshold, the system refuses to answer.
 
 This prevents the model from generating responses unrelated to the PostgreSQL documentation.
 
-🏗 Tech Stack
+### ----------
+
+### 🏗 Tech Stack
 Component	Technology
 Language	Python
 Embedding	Ollama (nomic-embed-text)
@@ -96,7 +102,7 @@ LLM	Ollama (llama3.2)
 Vector DB	ChromaDB (persistent mode)
 Data Source	PostgreSQL Documentation
 
-📂 Project Structure
+### 📂 Project Structure
 ```
 pg-docs-rag/
 ├── data/
@@ -110,7 +116,7 @@ pg-docs-rag/
 └── README.md
 ```
 
-🚀 How It Works
+### 🚀 How It Works
 Ingestion
 python scripts/ingest_docs.py
 
@@ -126,15 +132,18 @@ Generate embeddings
 
 Persist into ChromaDB
 
-Run Demo
+### Run Demo
+```bash
 python scripts/demo_rag.py
-
+```
 Example query:
-
+```
 What does SELECT do in PostgreSQL?
+```
 
-System flow:
+### System flow:
 
+```
 Embed query
 ↓
 Retrieve top matching chunks
@@ -142,7 +151,9 @@ Retrieve top matching chunks
 Inject context into prompt
 ↓
 Generate grounded answer
-🧩 Design Decisions
+```
+
+### 🧩 Design Decisions
 
 Why Local Models?
 
@@ -170,7 +181,7 @@ Suitable for semantic search
 
 Easier to discuss in backend/system interviews
 
-🛠 Engineering Considerations
+### 🛠 Engineering Considerations
 
 Persistent vector storage
 
@@ -184,7 +195,7 @@ Context size control to reduce latency
 
 Simple guardrail to reduce hallucination
 
-📊 Current Status
+### 📊 Current Status
 
 ~1500+ chunks indexed
 
@@ -194,7 +205,7 @@ Fully local RAG pipeline
 
 CLI demo functional
 
-🔮 Potential Improvements
+### 🔮 Potential Improvements
 
 Similarity threshold guardrail
 
@@ -210,7 +221,7 @@ Evaluation dataset
 
 Token usage tracking
 
-💡 What This Project Demonstrates
+### 💡 What This Project Demonstrates
 
 Understanding of RAG architecture
 
@@ -224,7 +235,7 @@ Trade-offs between latency and context size
 
 Local LLM deployment workflow
 
-📝 Notes
+### 📝 Notes
 
 Fully local
 
@@ -233,7 +244,7 @@ CPU inference (slower on lightweight machines)
 Designed for clarity and interview discussion rather than production scale
 
 
-###專案目標
+### 專案目標
 
 建立一個 最小可行但具 production 思維的 RAG 系統：
 
@@ -243,7 +254,7 @@ Designed for clarity and interview discussion rather than production scale
 
 展示向量檢索 + LLM grounding
 
-###🧠 系統架構
+### 🧠 系統架構
 文件 → 清理 → Chunk → Embedding → 儲存 → 檢索 → Ground → 生成回答
 
 流程圖：
@@ -264,7 +275,7 @@ LLM (llama3.2)
 ↓
 Answer
 
-###1️⃣ 文件收集與處理（Data Ingestion）
+### 1️⃣ 文件收集與處理（Data Ingestion）
 
 資料來源：PostgreSQL 官方文件
 
@@ -276,7 +287,7 @@ Embedding：使用 nomic-embed-text via Ollama
 
 儲存：ChromaDB（持久化向量資料庫）
 
-###2️⃣ 檢索（Retrieval）
+### 2️⃣ 檢索（Retrieval）
 
 User query 也會產生 embedding
 
@@ -284,7 +295,7 @@ Top-K 相似 chunks 透過向量相似度搜尋
 
 顯示距離方便調試與 guardrail
 
-###3️⃣ Grounded Generation
+### 3️⃣ Grounded Generation
 
 將檢索到的 chunks 注入 prompt
 
@@ -292,7 +303,7 @@ Top-K 相似 chunks 透過向量相似度搜尋
 
 Prompt 強制模型只能使用 context 內容
 
-###4️⃣ CLI 互動 Demo
+### 4️⃣ CLI 互動 Demo
 
 執行：
 ```bash
@@ -306,7 +317,7 @@ Ask a PostgreSQL question:
 Answer:
 The SELECT statement retrieves rows from a table or view...
 
-###5️⃣ Guardrail（防止亂回答）
+### 5️⃣ Guardrail（防止亂回答）
 
 檢查向量距離（distance）
 
@@ -319,7 +330,7 @@ if best_distance > 250:
     continue
 ```
 
-###🏗 技術堆疊（Tech Stack）
+### 🏗 技術堆疊（Tech Stack）
 元件	技術
 語言	Python
 Embedding	Ollama (nomic-embed-text)
@@ -327,7 +338,7 @@ LLM	Ollama (llama3.2)
 Vector DB	ChromaDB (持久化模式)
 資料來源	PostgreSQL Documentation
 
-###📂 專案目錄
+### 📂 專案目錄
 ```bash
 pg-docs-rag/
 ├── data/
