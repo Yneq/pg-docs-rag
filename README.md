@@ -49,12 +49,20 @@ ollama pull nomic-embed-text
 ollama pull llama3.2
 ```
 
-Place PostgreSQL documentation at `data/raw/postgres_docs.txt`, then build the
-local vector store:
+Download the pinned PostgreSQL 18.4 official HTML documentation archive, then
+build the local vector store. The downloader extracts only HTML documentation
+members and records the source URL in a manifest:
 
 ```powershell
-python scripts/ingest_docs.py
+python scripts/download_docs.py
+ollama pull nomic-embed-text
+python scripts/ingest_docs.py --reset
 ```
+
+Ingestion may take a while because embeddings are generated locally for every
+chunk. Progress and the final collection count are printed as it runs.
+Deterministic chunk IDs and Chroma `upsert` make a non-reset rerun safe; use
+`--reset` when intentionally rebuilding the entire `pg_docs` collection.
 
 ## Run with Ollama (default)
 
@@ -177,6 +185,7 @@ pg-docs-rag/
 │   ├── check_inference.py       # Lightweight backend configuration check
 │   ├── benchmark_rag.py         # Time one backend and capture GPU diagnostics
 │   ├── compare_benchmarks.py    # Compare saved benchmark runs
+│   ├── download_docs.py         # Fetch pinned official PostgreSQL HTML docs
 │   ├── ingest_docs.py
 │   ├── demo_rag.py
 │   └── chat.py
