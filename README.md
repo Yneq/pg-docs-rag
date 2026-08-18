@@ -41,21 +41,22 @@ Warm-run results measured on the environment above on 2026-08-18, using the
 same question (`How does PostgreSQL MVCC work?`), the same three retrieved
 chunks, and a 4,871-chunk PostgreSQL 18.4 index:
 
-| Generation backend | Retrieval | Generation | Total |
-|---|---:|---:|---:|
-| Ollama — `llama3.2:latest` | 1.263 s | 2.171 s | 3.434 s |
-| Transformers — Qwen2.5 3B, 4-bit | 0.132 s | 17.118 s | 17.251 s |
+| Generation backend | Retrieval | Generation | Total | Generated tokens | Tokens/s |
+|---|---:|---:|---:|---:|---:|
+| Ollama — `llama3.2:latest` | 0.133 s | 1.150 s | 1.283 s | 84 | 73.060 |
+| Transformers — Qwen2.5 3B, 4-bit | 1.273 s | 18.363 s | 19.636 s | 136 | 7.406 |
 
-Ollama generation was about 7.9× faster in this run. The Transformers GPU
-snapshot after generation was 3,163 MiB / 6,144 MiB at 94% utilization,
-confirming that the 4-bit model fits the target card. Retrieval uses the same
-Ollama embedding backend in both configurations, so its timing difference is
-runtime/cache variation rather than a generation-backend advantage.
+Ollama delivered about 9.9× higher generation throughput in this run. The
+Transformers answer contained about 62% more generated tokens, so wall-clock
+time alone overstated the underlying throughput gap. Its GPU snapshot remained
+around 3.2 GiB / 6 GiB at high utilization, confirming that the 4-bit model fits
+the target card even though its generic PyTorch/bitsandbytes path is slower.
 
-These are end-to-end response timings, not tokens-per-second measurements: the
-answers have different lengths. Manual inspection found the Transformers answer
-more closely aligned with the retrieved MVCC context, but a repeatable question
-set and groundedness scoring are still needed for a quality conclusion.
+Retrieval uses the same Ollama embedding backend in both configurations, so its
+timing difference is runtime/cache variation rather than a generation-backend
+advantage. Manual inspection found the Transformers answer more closely aligned
+with the retrieved MVCC context, but a repeatable question set and groundedness
+scoring are still needed for a quality conclusion.
 
 ## Setup
 
