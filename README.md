@@ -207,7 +207,7 @@ tokens/second comparison.
 ```text
 pg-docs-rag/
 ├── app/
-│   ├── db/session.py
+│   ├── documents.py             # PostgreSQL documentation parsing/chunking
 │   └── inference.py             # Ollama/Transformers backend abstraction
 ├── data/raw/                    # Local PostgreSQL docs (not committed)
 ├── scripts/
