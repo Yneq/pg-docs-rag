@@ -25,15 +25,22 @@ def main() -> None:
                 result["retrieval_seconds"],
                 result["generation_seconds"],
                 result["total_seconds"],
+                result.get("generated_tokens"),
+                result.get("tokens_per_second"),
             )
         )
 
-    print("| Result | Configuration | Retrieval (s) | Generation (s) | Total (s) |")
-    print("|---|---|---:|---:|---:|")
-    for label, configuration, retrieval, generation, total in rows:
+    print(
+        "| Result | Configuration | Retrieval (s) | Generation (s) | "
+        "Total (s) | Tokens | Tokens/s |"
+    )
+    print("|---|---|---:|---:|---:|---:|---:|")
+    for label, configuration, retrieval, generation, total, tokens, rate in rows:
+        tokens_text = str(tokens) if tokens is not None else "N/A"
+        rate_text = f"{rate:.3f}" if rate is not None else "N/A"
         print(
             f"| {label} | {configuration} | {retrieval:.3f} | "
-            f"{generation:.3f} | {total:.3f} |"
+            f"{generation:.3f} | {total:.3f} | {tokens_text} | {rate_text} |"
         )
 
 

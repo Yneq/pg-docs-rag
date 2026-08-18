@@ -7,7 +7,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import ollama
 import chromadb
 from chromadb.config import Settings
-from app.inference import create_inference_backend
+from app.inference import GenerationResult, create_inference_backend
 
 # 連接 Chroma
 chroma = chromadb.Client(Settings(
@@ -42,6 +42,11 @@ def retrieve(query, k=3):
 
 def generate_answer(question, context_chunks):
 
+    return generate_answer_with_metrics(question, context_chunks).text
+
+
+def generate_answer_with_metrics(question, context_chunks) -> GenerationResult:
+
     context = "\n\n".join(context_chunks)
 
     prompt = f"""
@@ -56,7 +61,7 @@ Question:
 {question}
 """
 
-    return inference.generate(prompt)
+    return inference.generate_with_metrics(prompt)
 
 
 def chat():

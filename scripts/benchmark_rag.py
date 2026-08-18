@@ -68,7 +68,7 @@ def main() -> None:
     # Import project dependencies only after argument parsing so `--help` stays
     # usable before the optional runtime is installed.
     from app.inference import InferenceConfig
-    from chat import generate_answer, retrieve
+    from chat import generate_answer, generate_answer_with_metrics, retrieve
 
     config = InferenceConfig.from_env()
     started_at = datetime.now(timezone.utc).isoformat()
@@ -83,9 +83,14 @@ def main() -> None:
         generate_answer(args.question, docs)
 
     generation_start = time.perf_counter()
-    answer = generate_answer(args.question, docs)
+    generation = generate_answer_with_metrics(args.question, docs)
     generation_seconds = time.perf_counter() - generation_start
     total_seconds = retrieval_seconds + generation_seconds
+    tokens_per_second = (
+        generation.generated_tokens / generation_seconds
+        if generation.generated_tokens is not None and generation_seconds > 0
+        else None
+    )
 
     result = {
         "timestamp_utc": started_at,
@@ -97,11 +102,14 @@ def main() -> None:
         "retrieval_seconds": round(retrieval_seconds, 3),
         "generation_seconds": round(generation_seconds, 3),
         "total_seconds": round(total_seconds, 3),
+        "prompt_tokens": generation.prompt_tokens,
+        "generated_tokens": generation.generated_tokens,
+        "tokens_per_second": round(tokens_per_second, 3) if tokens_per_second else None,
         "distances": distances,
         "gpu_before": gpu_before,
         "gpu_after": gpu_snapshot(),
         "ollama_ps": _run_diagnostic(["ollama", "ps"]),
-        "answer": answer,
+        "answer": generation.text,
     }
 
     rendered = json.dumps(result, ensure_ascii=False, indent=2)

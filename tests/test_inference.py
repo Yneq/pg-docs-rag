@@ -1,8 +1,10 @@
 import os
+from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
 
 from app.inference import (
+    GenerationResult,
     InferenceConfig,
     OllamaBackend,
     TransformersBackend,
@@ -40,6 +42,26 @@ class InferenceConfigTests(unittest.TestCase):
         config = InferenceConfig(backend="unknown")
         with self.assertRaisesRegex(ValueError, "Unsupported LLM_BACKEND"):
             create_inference_backend(config)
+
+    def test_ollama_returns_runtime_token_counts(self):
+        fake_ollama = SimpleNamespace(
+            generate=lambda **kwargs: {
+                "response": " generated answer ",
+                "eval_count": 42,
+                "prompt_eval_count": 17,
+            }
+        )
+        with patch.dict("sys.modules", {"ollama": fake_ollama}):
+            result = OllamaBackend("example").generate_with_metrics("prompt")
+
+        self.assertEqual(
+            result,
+            GenerationResult(
+                text="generated answer",
+                generated_tokens=42,
+                prompt_tokens=17,
+            ),
+        )
 
 
 if __name__ == "__main__":

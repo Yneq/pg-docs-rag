@@ -12,11 +12,21 @@ import os
 from typing import Protocol
 
 
+@dataclass(frozen=True)
+class GenerationResult:
+    text: str
+    generated_tokens: int | None = None
+    prompt_tokens: int | None = None
+
+
 class InferenceBackend(Protocol):
     """Small interface used by the RAG scripts."""
 
     def generate(self, prompt: str) -> str:
         """Generate text from a complete prompt."""
+
+    def generate_with_metrics(self, prompt: str) -> GenerationResult:
+        """Generate text and return token counts when the runtime provides them."""
 
 
 def _env_bool(name: str, default: bool) -> bool:
@@ -65,10 +75,27 @@ class OllamaBackend:
         self.model = model
 
     def generate(self, prompt: str) -> str:
+        return self.generate_with_metrics(prompt).text
+
+    def generate_with_metrics(self, prompt: str) -> GenerationResult:
         import ollama
 
         response = ollama.generate(model=self.model, prompt=prompt)
-        return response["response"].strip()
+        return GenerationResult(
+            text=_response_field(response, "response", "").strip(),
+            generated_tokens=_response_field(response, "eval_count"),
+            prompt_tokens=_response_field(response, "prompt_eval_count"),
+        )
+
+
+def _response_field(response, name: str, default=None):
+    value = getattr(response, name, None)
+    if value is not None:
+        return value
+    try:
+        return response[name]
+    except (KeyError, TypeError):
+        return default
 
 
 class TransformersBackend:
@@ -120,6 +147,9 @@ class TransformersBackend:
         )
 
     def generate(self, prompt: str) -> str:
+        return self.generate_with_metrics(prompt).text
+
+    def generate_with_metrics(self, prompt: str) -> GenerationResult:
         self._load()
         assert self._model is not None
         assert self._tokenizer is not None
@@ -142,9 +172,14 @@ class TransformersBackend:
 
         output = self._model.generate(**inputs, **generation_kwargs)
         prompt_length = inputs["input_ids"].shape[-1]
-        return self._tokenizer.decode(
-            output[0][prompt_length:], skip_special_tokens=True
-        ).strip()
+        generated_tokens = int(output.shape[-1] - prompt_length)
+        return GenerationResult(
+            text=self._tokenizer.decode(
+                output[0][prompt_length:], skip_special_tokens=True
+            ).strip(),
+            generated_tokens=generated_tokens,
+            prompt_tokens=int(prompt_length),
+        )
 
 
 def create_inference_backend(

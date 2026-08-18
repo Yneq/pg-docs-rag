@@ -188,12 +188,18 @@ python scripts/compare_benchmarks.py `
   results/ollama.json results/transformers.json
 ```
 
-Each result records retrieval, generation and total wall-clock time, the answer,
-retrieval distances, `ollama ps`, and NVIDIA GPU memory/utilization snapshots.
+Each result records retrieval, generation and total wall-clock time, prompt and
+generated token counts, generation tokens/second, the answer, retrieval
+distances, `ollama ps`, and NVIDIA GPU memory/utilization snapshots. Ollama uses
+its API `eval_count`; Transformers counts the generated token IDs directly.
 With `--warmup`, one unmeasured generation loads the model before timing begins.
 Remove this flag when measuring cold-start cost. The first Transformers run may
 also download model files, which should be reported separately from inference
 latency.
+
+Existing benchmark JSON created before token metrics was added remains readable
+and displays `N/A` for those columns. Rerun both backends to produce a fair
+tokens/second comparison.
 
 ## Project Structure
 
