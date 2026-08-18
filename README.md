@@ -129,6 +129,42 @@ recommended starting point.
 | Embeddings in this project | `nomic-embed-text` | Still uses Ollama to preserve the existing index |
 | Best use here | Stable everyday local RAG | Learning, experimentation, and backend comparison |
 
+## Benchmark Both Backends
+
+Run one backend at a time so the two generation models do not compete for the
+GTX 1660 Ti's 6 GB VRAM. Use exactly the same question for both runs.
+
+```powershell
+# 1. Ollama
+$env:LLM_BACKEND = "ollama"
+python scripts/benchmark_rag.py `
+  --question "How does PostgreSQL MVCC work?" `
+  --warmup `
+  --output results/ollama.json
+
+# Free the Ollama generation model before loading Transformers.
+ollama stop llama3.2
+
+# 2. Transformers
+$env:LLM_BACKEND = "transformers"
+$env:HF_LOAD_IN_4BIT = "true"
+python scripts/benchmark_rag.py `
+  --question "How does PostgreSQL MVCC work?" `
+  --warmup `
+  --output results/transformers.json
+
+# 3. Print a comparison table
+python scripts/compare_benchmarks.py `
+  results/ollama.json results/transformers.json
+```
+
+Each result records retrieval, generation and total wall-clock time, the answer,
+retrieval distances, `ollama ps`, and NVIDIA GPU memory/utilization snapshots.
+With `--warmup`, one unmeasured generation loads the model before timing begins.
+Remove this flag when measuring cold-start cost. The first Transformers run may
+also download model files, which should be reported separately from inference
+latency.
+
 ## Project Structure
 
 ```text
@@ -139,6 +175,8 @@ pg-docs-rag/
 ├── data/raw/                    # Local PostgreSQL docs (not committed)
 ├── scripts/
 │   ├── check_inference.py       # Lightweight backend configuration check
+│   ├── benchmark_rag.py         # Time one backend and capture GPU diagnostics
+│   ├── compare_benchmarks.py    # Compare saved benchmark runs
 │   ├── ingest_docs.py
 │   ├── demo_rag.py
 │   └── chat.py
