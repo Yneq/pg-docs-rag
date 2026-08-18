@@ -1,6 +1,13 @@
+from pathlib import Path
+import sys
+
+# Keep `python scripts/chat.py` working while importing project modules.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import ollama
 import chromadb
 from chromadb.config import Settings
+from app.inference import create_inference_backend
 
 # 連接 Chroma
 chroma = chromadb.Client(Settings(
@@ -9,6 +16,7 @@ chroma = chromadb.Client(Settings(
 ))
 
 collection = chroma.get_or_create_collection("pg_docs")
+inference = create_inference_backend()
 
 
 def retrieve(query, k=3):
@@ -48,14 +56,7 @@ Question:
 {question}
 """
 
-    response = ollama.chat(
-        model="llama3.2",
-        messages=[
-            {"role": "user", "content": prompt}
-        ]
-    )
-
-    return response["message"]["content"]
+    return inference.generate(prompt)
 
 
 def chat():

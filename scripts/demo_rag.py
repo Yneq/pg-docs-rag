@@ -1,6 +1,13 @@
+from pathlib import Path
+import sys
+
+# Keep `python scripts/demo_rag.py` working while importing project modules.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
 import ollama
 import chromadb
 from chromadb.config import Settings
+from app.inference import create_inference_backend
 
 # 初始化 ChromaDB
 chroma = chromadb.Client(Settings(
@@ -9,22 +16,19 @@ chroma = chromadb.Client(Settings(
 ))
 
 collection = chroma.get_or_create_collection("pg_docs")
+inference = create_inference_backend()
 
 
 def translate_to_english(query):
-    response = ollama.generate(
-        model="llama3.2",
-        prompt=f"Translate this PostgreSQL question to clear, formal English, keep technical terms: {query}",
+    return inference.generate(
+        f"Translate this PostgreSQL question to clear, formal English, keep technical terms: {query}"
     )
-    return response["response"].strip()
 
 
 def translate_to_chinese(text):
-    response = ollama.generate(
-        model="llama3.2",
-        prompt=f"請將下列 PostgreSQL 技術回答翻譯成繁體中文（台灣用語），保持技術術語正確，並使用正式、易讀的文字：\n\n{text}",
+    return inference.generate(
+        f"請將下列 PostgreSQL 技術回答翻譯成繁體中文（台灣用語），保持技術術語正確，並使用正式、易讀的文字：\n\n{text}"
     )
-    return response["response"].strip()
 
 
 def retrieve(query, k=3):
@@ -67,12 +71,7 @@ Question:
 Answer:
 """
 
-    response = ollama.generate(
-        model="llama3.2",
-        prompt=prompt
-    )
-
-    return response["response"]
+    return inference.generate(prompt)
 
 
 if __name__ == "__main__":
