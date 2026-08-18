@@ -35,6 +35,28 @@ of the project.
 | GPU offload | `ollama ps` verified `100% GPU` |
 | Context | 4096 tokens |
 
+## Measured Performance
+
+Warm-run results measured on the environment above on 2026-08-18, using the
+same question (`How does PostgreSQL MVCC work?`), the same three retrieved
+chunks, and a 4,871-chunk PostgreSQL 18.4 index:
+
+| Generation backend | Retrieval | Generation | Total |
+|---|---:|---:|---:|
+| Ollama — `llama3.2:latest` | 1.263 s | 2.171 s | 3.434 s |
+| Transformers — Qwen2.5 3B, 4-bit | 0.132 s | 17.118 s | 17.251 s |
+
+Ollama generation was about 7.9× faster in this run. The Transformers GPU
+snapshot after generation was 3,163 MiB / 6,144 MiB at 94% utilization,
+confirming that the 4-bit model fits the target card. Retrieval uses the same
+Ollama embedding backend in both configurations, so its timing difference is
+runtime/cache variation rather than a generation-backend advantage.
+
+These are end-to-end response timings, not tokens-per-second measurements: the
+answers have different lengths. Manual inspection found the Transformers answer
+more closely aligned with the retrieved MVCC context, but a repeatable question
+set and groundedness scoring are still needed for a quality conclusion.
+
 ## Setup
 
 Python 3.10–3.12 is recommended, especially for CUDA/PyTorch package
