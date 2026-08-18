@@ -12,6 +12,8 @@ PostgreSQL docs → clean → chunk → Ollama embeddings → ChromaDB
 Question → Ollama embedding → retrieve → guardrail → grounded prompt
                                                         ↓
                                   Ollama or Transformers generation
+                                                        ↓
+                                      CLI or FastAPI JSON response
 ```
 
 Ollama remains the default and is always used for `nomic-embed-text`
@@ -87,6 +89,69 @@ chunk. Progress and the final collection count are printed as it runs.
 Deterministic chunk IDs and Chroma `upsert` make a non-reset rerun safe; use
 `--reset` when intentionally rebuilding the entire `pg_docs` collection.
 
+## Run the FastAPI Service
+
+The API and CLI share the same retrieval, guardrail, prompt, and inference
+implementation. Start it from the repository root after building the index:
+
+```powershell
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```
+
+Open `http://127.0.0.1:8000/docs` for interactive Swagger documentation. The
+service exposes:
+
+| Method | Path | Purpose |
+|---|---|---|
+| `GET` | `/health` | Report backend configuration and indexed chunk count |
+| `POST` | `/api/query` | Retrieve sources, apply the guardrail, and generate an answer |
+
+PowerShell request example:
+
+```powershell
+$body = @{
+  question = "How does PostgreSQL MVCC work?"
+  top_k = 3
+} | ConvertTo-Json
+
+Invoke-RestMethod `
+  -Uri "http://127.0.0.1:8000/api/query" `
+  -Method Post `
+  -ContentType "application/json" `
+  -Body $body
+```
+
+The response includes `grounded`, retrieved source metadata, retrieval and
+generation latency, token counts, and generation tokens/second. Synchronous
+Chroma and local-model work runs outside FastAPI's event loop. Generation is
+serialized per process to avoid concurrent access to one Transformers model
+and excessive pressure on a 6 GB GPU.
+
+This local demo does not include authentication or rate limiting. Bind it to
+`127.0.0.1` unless it is placed behind an authenticated reverse proxy.
+
+Run the offline unit and API contract tests without Ollama, Chroma data, or a
+GPU:
+
+```powershell
+pip install -r requirements-dev.txt
+python -m unittest discover -s tests -v
+```
+
+### Run the API with Docker
+
+Keep Ollama running on the Windows host and start the API container:
+
+```powershell
+docker compose up --build
+```
+
+The Compose configuration mounts the existing `./chroma` index and connects
+the container to host Ollama through `host.docker.internal`. This path uses the
+default Ollama generation backend; direct CUDA Transformers remains best run
+from the Windows virtual environment unless an NVIDIA container runtime is
+configured.
+
 ## Run with Ollama (default)
 
 No backend setting is required:
@@ -141,6 +206,10 @@ Configuration variables:
 | `HF_LOAD_IN_4BIT` | `true` | Enable bitsandbytes 4-bit loading |
 | `HF_MAX_NEW_TOKENS` | `512` | Maximum generated tokens per request |
 | `HF_TEMPERATURE` | `0.0` | `0` for deterministic generation; positive values enable sampling |
+| `CHROMA_PATH` | `./chroma` | Persistent Chroma directory |
+| `CHROMA_COLLECTION` | `pg_docs` | Chroma collection name |
+| `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` | Ollama embedding model |
+| `RAG_DISTANCE_THRESHOLD` | `250` | Maximum accepted nearest-chunk distance |
 
 `scripts/check_inference.py` validates backend selection without downloading or
 loading the model. The actual chat command verifies CUDA and loads the model on
@@ -208,7 +277,9 @@ tokens/second comparison.
 pg-docs-rag/
 ├── app/
 │   ├── documents.py             # PostgreSQL documentation parsing/chunking
-│   └── inference.py             # Ollama/Transformers backend abstraction
+│   ├── inference.py             # Ollama/Transformers backend abstraction
+│   ├── rag.py                   # Shared retrieval/guardrail/generation service
+│   └── main.py                  # FastAPI endpoints and Pydantic contracts
 ├── data/raw/                    # Local PostgreSQL docs (not committed)
 ├── scripts/
 │   ├── check_inference.py       # Lightweight backend configuration check
@@ -219,17 +290,23 @@ pg-docs-rag/
 │   ├── demo_rag.py
 │   └── chat.py
 ├── chroma/                      # Persistent local vector store (not committed)
+├── tests/                       # Offline core and API contract tests
+├── Dockerfile
+├── compose.yaml
 ├── requirements.txt
+├── requirements-dev.txt
 └── requirements-transformers.txt
 ```
 
 ## Guardrail and Design Notes
 
-The chat checks the closest Chroma distance before generating an answer and
-refuses unrelated questions. Retrieved chunks are placed in a prompt that tells
-the model to answer only from the supplied PostgreSQL context.
+The shared RAG service checks the closest Chroma distance before generating an
+answer and refuses unrelated questions. Retrieved chunks are labeled in a
+prompt that tells the model to answer only from the supplied PostgreSQL context
+and cite `[Source N]`. The API returns each source's title, file, chunk index,
+and distance so clients can inspect the evidence.
 
 This remains a local RAG prototype: it demonstrates document cleaning,
 chunking, embeddings, vector retrieval, grounded generation, selectable local
-inference, and the deployment trade-offs between a packaged runtime and direct
-model control.
+inference, an HTTP contract, and the deployment trade-offs between a packaged
+runtime and direct model control.

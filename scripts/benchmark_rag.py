@@ -68,22 +68,23 @@ def main() -> None:
     # Import project dependencies only after argument parsing so `--help` stays
     # usable before the optional runtime is installed.
     from app.inference import InferenceConfig
-    from chat import generate_answer, generate_answer_with_metrics, retrieve
+    from app.rag import create_rag_service
 
     config = InferenceConfig.from_env()
+    service = create_rag_service()
     started_at = datetime.now(timezone.utc).isoformat()
     gpu_before = gpu_snapshot()
 
     retrieval_start = time.perf_counter()
-    docs, distances = retrieve(args.question)
+    chunks = service.retrieve(args.question)
     retrieval_seconds = time.perf_counter() - retrieval_start
 
     if args.warmup:
         print("Warming up generation backend...", file=sys.stderr)
-        generate_answer(args.question, docs)
+        service.generate(args.question, chunks)
 
     generation_start = time.perf_counter()
-    generation = generate_answer_with_metrics(args.question, docs)
+    generation = service.generate(args.question, chunks)
     generation_seconds = time.perf_counter() - generation_start
     total_seconds = retrieval_seconds + generation_seconds
     tokens_per_second = (
@@ -104,8 +105,20 @@ def main() -> None:
         "total_seconds": round(total_seconds, 3),
         "prompt_tokens": generation.prompt_tokens,
         "generated_tokens": generation.generated_tokens,
-        "tokens_per_second": round(tokens_per_second, 3) if tokens_per_second else None,
-        "distances": distances,
+        "tokens_per_second": (
+            round(tokens_per_second, 3)
+            if tokens_per_second is not None
+            else None
+        ),
+        "distances": [chunk.distance for chunk in chunks],
+        "sources": [
+            {
+                "title": chunk.title,
+                "source": chunk.source,
+                "chunk_index": chunk.chunk_index,
+            }
+            for chunk in chunks
+        ],
         "gpu_before": gpu_before,
         "gpu_after": gpu_snapshot(),
         "ollama_ps": _run_diagnostic(["ollama", "ps"]),
