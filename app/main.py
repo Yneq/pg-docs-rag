@@ -30,6 +30,11 @@ class SourceResponse(BaseModel):
     source: str | None
     chunk_index: int | None
     distance: float
+    lexical_score: float | None
+    lexical_matched_terms: int
+    lexical_query_terms: int
+    lexical_coverage: float
+    fusion_score: float | None
 
 
 class MetricsResponse(BaseModel):
@@ -115,6 +120,19 @@ async def query(
                 source=chunk.source,
                 chunk_index=chunk.chunk_index,
                 distance=round(chunk.distance, 6),
+                lexical_score=(
+                    round(chunk.lexical_score, 6)
+                    if chunk.lexical_score is not None
+                    else None
+                ),
+                lexical_matched_terms=chunk.lexical_matched_terms,
+                lexical_query_terms=chunk.lexical_query_terms,
+                lexical_coverage=round(chunk.lexical_coverage, 3),
+                fusion_score=(
+                    round(chunk.fusion_score, 6)
+                    if chunk.fusion_score is not None
+                    else None
+                ),
             )
             for rank, chunk in enumerate(result.chunks, start=1)
         ],

@@ -3,6 +3,7 @@ import unittest
 from app.inference import GenerationResult
 from app.rag import (
     REFUSAL_MESSAGE,
+    RetrievedChunk,
     RagService,
     RagSettings,
     expand_postgresql_terms,
@@ -50,7 +51,7 @@ def make_service(distance=0.25):
         collection=FakeCollection(distance),
         embed_query=lambda question: [0.1, 0.2],
         inference=inference,
-        settings=RagSettings(),
+        settings=RagSettings(hybrid_enabled=False),
         backend_summary="backend=fake, model=fake",
     )
     return service, inference
@@ -89,6 +90,30 @@ class RagServiceTests(unittest.TestCase):
         question = "How does MVCC multiversion concurrency control work?"
 
         self.assertEqual(expand_postgresql_terms(question), question)
+
+    def test_strong_lexical_match_can_pass_guardrail(self):
+        service, _ = make_service(distance=0.9)
+        chunk = RetrievedChunk(
+            document="EXPLAIN ANALYZE executes the statement.",
+            distance=0.9,
+            lexical_matched_terms=2,
+            lexical_query_terms=2,
+            lexical_coverage=1.0,
+        )
+
+        self.assertTrue(service.is_relevant([chunk]))
+
+    def test_weak_lexical_match_does_not_bypass_guardrail(self):
+        service, _ = make_service(distance=0.9)
+        chunk = RetrievedChunk(
+            document="An unrelated document containing one shared word.",
+            distance=0.9,
+            lexical_matched_terms=1,
+            lexical_query_terms=3,
+            lexical_coverage=1 / 3,
+        )
+
+        self.assertFalse(service.is_relevant([chunk]))
 
 
 if __name__ == "__main__":

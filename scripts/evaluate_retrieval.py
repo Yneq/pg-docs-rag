@@ -112,6 +112,7 @@ def score_evaluation(
                 "source_rank": source_rank,
                 "sources": sources,
                 "distances": observation.get("distances") or [],
+                "lexical_coverages": observation.get("lexical_coverages") or [],
             }
         )
 
@@ -153,16 +154,18 @@ def print_report(report: dict[str, Any]) -> None:
         f"({metrics['guardrail_correct']}/{metrics['total_cases']})"
     )
     print(f"Result: {'PASS' if report['passed'] else 'FAIL'}")
-    print("\n| Case | Guardrail | Source rank | Best distance |")
-    print("|---|---|---:|---:|")
+    print("\n| Case | Guardrail | Source rank | Best distance | Lexical coverage |")
+    print("|---|---|---:|---:|---:|")
     for result in report["results"]:
         distance = result["distances"][0] if result["distances"] else None
         distance_text = f"{distance:.3f}" if distance is not None else "-"
+        coverages = result["lexical_coverages"]
+        coverage_text = f"{coverages[0]:.0%}" if coverages else "-"
         source_rank = result["source_rank"] or "-"
         guardrail = "PASS" if result["guardrail_correct"] else "FAIL"
         print(
             f"| {result['id']} | {guardrail} | {source_rank} | "
-            f"{distance_text} |"
+            f"{distance_text} | {coverage_text} |"
         )
 
 
@@ -191,6 +194,9 @@ def main() -> None:
                 "predicted_answer": service.is_relevant(chunks),
                 "sources": [chunk.source for chunk in chunks],
                 "distances": [chunk.distance for chunk in chunks],
+                "lexical_coverages": [
+                    chunk.lexical_coverage for chunk in chunks
+                ],
             }
         )
 

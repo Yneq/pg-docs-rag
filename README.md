@@ -11,7 +11,7 @@ interview-friendly pipeline rather than UI complexity or external APIs.
 ```text
 PostgreSQL docs → clean → chunk → prefixed Ollama embeddings → ChromaDB
                                                         ↓
-Question → Ollama embedding → retrieve → guardrail → grounded prompt
+Question → Ollama embedding + BM25 → RRF fusion → guardrail → grounded prompt
                                                         ↓
                                   Ollama or Transformers generation
                                                         ↓
@@ -177,11 +177,17 @@ drops below 90%. GitHub Actions validates the dataset and runs all offline tests
 on every push and pull request; the real retrieval evaluation stays local
 because it requires Ollama and the 4,871-chunk Chroma index.
 
-Current Mac baseline:
+Current Mac results show the effect of hybrid retrieval against the same fixed
+dataset and index:
 
-| Retrieval hit@3 | MRR@3 | Guardrail accuracy | Result |
-|---:|---:|---:|---|
-| 80.0% (12/15) | 0.767 | 95.0% (19/20) | PASS |
+| Retrieval strategy | Hit@3 | MRR@3 | Guardrail accuracy |
+|---|---:|---:|---:|
+| Semantic only | 80.0% (12/15) | 0.767 | 95.0% (19/20) |
+| Semantic + BM25 + RRF | 100.0% (15/15) | 0.922 | 100.0% (20/20) |
+
+The hybrid run recovered all three challenge cases without losing any of the
+five out-of-domain refusals. These figures are a small, project-specific
+regression baseline rather than a general model-quality benchmark.
 
 ### Run the API with Docker
 
@@ -254,6 +260,13 @@ Configuration variables:
 | `CHROMA_COLLECTION` | `pg_docs` | Chroma collection name |
 | `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` | Ollama embedding model |
 | `RAG_DISTANCE_THRESHOLD` | `0.6` | Maximum accepted normalized L2 distance |
+| `RAG_HYBRID_ENABLED` | `true` | Combine semantic and BM25 retrieval |
+| `RAG_SEMANTIC_CANDIDATES` | `50` | Semantic candidates considered by RRF |
+| `RAG_LEXICAL_CANDIDATES` | `20` | BM25 candidates considered by RRF |
+| `RAG_RRF_K` | `60` | Reciprocal Rank Fusion smoothing constant |
+| `RAG_LEXICAL_WEIGHT` | `2.0` | BM25 contribution relative to semantic rank |
+| `RAG_LEXICAL_GUARDRAIL_COVERAGE` | `0.8` | Minimum query-term coverage for lexical guardrail evidence |
+| `RAG_LEXICAL_GUARDRAIL_MIN_TERMS` | `2` | Minimum matched terms for lexical guardrail evidence |
 
 `scripts/check_inference.py` validates backend selection without downloading or
 loading the model. The actual chat command verifies CUDA and loads the model on
@@ -346,11 +359,16 @@ pg-docs-rag/
 
 ## Guardrail and Design Notes
 
-The shared RAG service checks the closest Chroma distance before generating an
-answer and refuses unrelated questions. Retrieved chunks are labeled in a
+The shared RAG service combines Chroma semantic search with an in-memory BM25
+inverted index using weighted Reciprocal Rank Fusion (RRF). Before generation,
+the guardrail accepts either a close normalized vector match or strong lexical
+evidence that covers at least two query terms. Requiring both lexical coverage
+and a minimum term count prevents a single coincidental word from bypassing the
+distance threshold. Retrieved chunks are labeled in a
 prompt that tells the model to answer only from the supplied PostgreSQL context
 and cite `[Source N]`. The API returns each source's title, file, chunk index,
-and distance so clients can inspect the evidence.
+distance, lexical score, query-term coverage, and fusion score so clients can
+inspect why it ranked.
 
 `nomic-embed-text` receives its required retrieval task prefixes:
 `search_document:` during ingestion and `search_query:` during retrieval. The
