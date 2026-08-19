@@ -1,5 +1,7 @@
 # pg-docs-rag
 
+[![CI](https://github.com/Yneq/pg-docs-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/Yneq/pg-docs-rag/actions/workflows/ci.yml)
+
 A fully local Retrieval-Augmented Generation (RAG) system using the official
 PostgreSQL documentation as its knowledge base. The project focuses on a clear,
 interview-friendly pipeline rather than UI complexity or external APIs.
@@ -156,6 +158,31 @@ pip install -r requirements-dev.txt
 python -m unittest discover -s tests -v
 ```
 
+## Retrieval Quality Evaluation
+
+The versioned evaluation set contains 15 PostgreSQL questions and five
+out-of-domain questions. It measures source hit rate at three results, mean
+reciprocal rank (MRR), and guardrail accuracy without spending time generating
+answers:
+
+```bash
+python scripts/evaluate_retrieval.py \
+  --output results/retrieval-eval.json
+```
+
+The baseline intentionally includes difficult CTE, `EXPLAIN ANALYZE`, and HOT
+questions instead of selecting only known successes. The evaluation fails with
+a non-zero exit code if retrieval hit@3 drops below 75% or guardrail accuracy
+drops below 90%. GitHub Actions validates the dataset and runs all offline tests
+on every push and pull request; the real retrieval evaluation stays local
+because it requires Ollama and the 4,871-chunk Chroma index.
+
+Current Mac baseline:
+
+| Retrieval hit@3 | MRR@3 | Guardrail accuracy | Result |
+|---:|---:|---:|---|
+| 80.0% (12/15) | 0.767 | 95.0% (19/20) | PASS |
+
 ### Run the API with Docker
 
 Keep Ollama running on the Mac host and start the API container:
@@ -307,11 +334,13 @@ pg-docs-rag/
 │   ├── demo_rag.py
 │   └── chat.py
 ├── chroma/                      # Persistent local vector store (not committed)
+├── evals/                       # Versioned retrieval/guardrail question set
 ├── tests/                       # Offline core and API contract tests
 ├── Dockerfile
 ├── compose.yaml
 ├── requirements.txt
 ├── requirements-dev.txt
+├── requirements-test.txt
 └── requirements-transformers.txt
 ```
 

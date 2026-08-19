@@ -1,0 +1,130 @@
+{
+  "name": "postgresql_retrieval_v1",
+  "top_k": 3,
+  "minimums": {
+    "retrieval_hit_rate": 0.75,
+    "guardrail_accuracy": 0.9
+  },
+  "cases": [
+    {
+      "id": "mvcc",
+      "question": "What is multiversion concurrency control in PostgreSQL?",
+      "should_answer": true,
+      "expected_sources": ["mvcc-intro.html"]
+    },
+    {
+      "id": "transaction_isolation",
+      "question": "How do transaction isolation levels work?",
+      "should_answer": true,
+      "expected_sources": ["transaction-iso.html"]
+    },
+    {
+      "id": "vacuum",
+      "question": "How does VACUUM reclaim dead tuples?",
+      "should_answer": true,
+      "expected_sources": ["sql-vacuum.html", "routine-vacuuming.html"]
+    },
+    {
+      "id": "wal",
+      "question": "What is write-ahead logging used for?",
+      "should_answer": true,
+      "expected_sources": ["wal.html", "wal-for-extensions.html", "continuous-archiving.html"]
+    },
+    {
+      "id": "btree_index",
+      "question": "How do I create a B-tree index?",
+      "should_answer": true,
+      "expected_sources": ["indexes-types.html", "sql-createindex.html", "btree.html"]
+    },
+    {
+      "id": "cte_challenge",
+      "question": "What is a common table expression?",
+      "should_answer": true,
+      "expected_sources": ["queries-with.html"]
+    },
+    {
+      "id": "logical_replication",
+      "question": "How does PostgreSQL logical replication work?",
+      "should_answer": true,
+      "expected_sources": ["logical-replication.html", "logical-replication-architecture.html"]
+    },
+    {
+      "id": "pg_hba",
+      "question": "How do I configure pg_hba.conf authentication?",
+      "should_answer": true,
+      "expected_sources": ["auth-pg-hba-conf.html"]
+    },
+    {
+      "id": "explain_analyze_challenge",
+      "question": "What does EXPLAIN ANALYZE show?",
+      "should_answer": true,
+      "expected_sources": ["using-explain.html", "sql-explain.html"]
+    },
+    {
+      "id": "partitioning",
+      "question": "How does PostgreSQL partitioning work?",
+      "should_answer": true,
+      "expected_sources": ["ddl-partitioning.html", "sql-createtable.html"]
+    },
+    {
+      "id": "foreign_keys",
+      "question": "How do foreign keys enforce referential integrity?",
+      "should_answer": true,
+      "expected_sources": ["ddl-constraints.html", "sql-createtable.html"]
+    },
+    {
+      "id": "pitr",
+      "question": "How does point-in-time recovery work?",
+      "should_answer": true,
+      "expected_sources": ["continuous-archiving.html"]
+    },
+    {
+      "id": "hot_challenge",
+      "question": "What are heap-only tuples?",
+      "should_answer": true,
+      "expected_sources": ["storage-hot.html"]
+    },
+    {
+      "id": "triggers",
+      "question": "How do PostgreSQL triggers work?",
+      "should_answer": true,
+      "expected_sources": ["trigger-definition.html", "sql-createtrigger.html"]
+    },
+    {
+      "id": "jsonb_indexing",
+      "question": "How does JSONB indexing work?",
+      "should_answer": true,
+      "expected_sources": ["datatype-json.html", "gin.html"]
+    },
+    {
+      "id": "weather",
+      "question": "What is the weather in Taipei today?",
+      "should_answer": false,
+      "expected_sources": []
+    },
+    {
+      "id": "football",
+      "question": "Who won the FIFA World Cup?",
+      "should_answer": false,
+      "expected_sources": []
+    },
+    {
+      "id": "cake",
+      "question": "How do I bake chocolate cake?",
+      "should_answer": false,
+      "expected_sources": []
+    },
+    {
+      "id": "geography",
+      "question": "What is the capital of France?",
+      "should_answer": false,
+      "expected_sources": []
+    },
+    {
+      "id": "react",
+      "question": "Write a React component for a music player.",
+      "should_answer": false,
+      "expected_sources": []
+    }
+  ]
+}
