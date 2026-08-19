@@ -189,6 +189,39 @@ The hybrid run recovered all three challenge cases without losing any of the
 five out-of-domain refusals. These figures are a small, project-specific
 regression baseline rather than a general model-quality benchmark.
 
+## Answer and Citation Evaluation
+
+Retrieval success does not prove that the generated answer is complete or that
+its citations are usable. A second versioned dataset therefore runs the full
+RAG pipeline and checks three deterministic properties:
+
+- expected PostgreSQL concepts appear in the answer;
+- every answer contains at least one valid `[Source N]` citation referring to
+  a source returned for that request;
+- out-of-domain questions are rejected before generation is invoked.
+
+```bash
+python scripts/evaluate_answers.py \
+  --output results/answer-eval-ollama.json
+```
+
+Current Ollama result on the Mac environment:
+
+| Concept coverage | Citation accuracy | Guardrail accuracy | Result |
+|---:|---:|---:|---|
+| 100.0% (15/15) | 100.0% (5/5) | 100.0% (7/7) | PASS |
+
+The first run exposed a real prompt-contract defect: answers used
+`[Source 1: title]` instead of the documented `[Source 1]` format, resulting in
+0/5 valid citations. Separating the source number from its title in the context
+and making the exact citation contract explicit fixed the same test set to 5/5.
+
+This evaluation is intentionally a regression smoke test, not a claim of
+perfect answer quality. Keyword groups can verify required concepts and source
+numbers, but cannot prove that every statement is factually supported. Manual
+review or an independently calibrated judge remains appropriate before using
+the system for higher-stakes conclusions.
+
 ### Run the API with Docker
 
 Keep Ollama running on the Mac host and start the API container:

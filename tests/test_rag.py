@@ -67,8 +67,9 @@ class RagServiceTests(unittest.TestCase):
         self.assertEqual(result.chunks[0].source, "mvcc-intro.html")
         self.assertEqual(result.chunks[0].chunk_index, 2)
         self.assertEqual(result.generation.generated_tokens, 8)
-        self.assertIn("[Source 1: Concurrency Control]", inference.prompt)
+        self.assertIn("[Source 1] Concurrency Control", inference.prompt)
         self.assertIn("using ONLY the provided context", inference.prompt)
+        self.assertIn("exact format [Source N]", inference.prompt)
 
     def test_irrelevant_query_refuses_without_generation(self):
         service, inference = make_service(distance=0.61)

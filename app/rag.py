@@ -316,15 +316,18 @@ class RagService:
         for rank, chunk in enumerate(chunks, start=1):
             label = chunk.title or chunk.source or "PostgreSQL documentation"
             context_sections.append(
-                f"[Source {rank}: {label}]\n{chunk.document}"
+                f"[Source {rank}] {label}\n{chunk.document}"
             )
 
         context = "\n\n".join(context_sections)
         prompt = (
             "You are a PostgreSQL expert. Answer the question using ONLY the "
-            "provided context. Cite supporting passages with [Source N]. If the "
-            "context does not contain the answer, say that you could not find it "
-            "in the PostgreSQL documentation.\n\n"
+            "provided context. Every factual answer must contain at least one "
+            "citation using the exact format [Source N], for example [Source 1]. "
+            "Do not put titles or other text inside the brackets. Include important "
+            "safety caveats when they are relevant. If the context does not contain "
+            "the answer, say that you could not find it in the PostgreSQL "
+            "documentation.\n\n"
             f"Context:\n{context}\n\n"
             f"Question:\n{question}\n\nAnswer:"
         )

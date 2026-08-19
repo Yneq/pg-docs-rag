@@ -25,5 +25,7 @@ jobs:
         run: python -m compileall -q app scripts tests
       - name: Validate retrieval evaluation dataset
         run: python scripts/evaluate_retrieval.py --validate-only
+      - name: Validate answer evaluation dataset
+        run: python scripts/evaluate_answers.py --validate-only
       - name: Run offline tests
         run: python -m unittest discover -s tests -v

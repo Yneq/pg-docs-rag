@@ -1,0 +1,73 @@
+{
+  "name": "postgresql_answer_quality_v1",
+  "top_k": 3,
+  "minimums": {
+    "concept_coverage": 0.7,
+    "citation_accuracy": 0.8,
+    "guardrail_accuracy": 1.0
+  },
+  "cases": [
+    {
+      "id": "mvcc",
+      "question": "How does PostgreSQL MVCC work?",
+      "should_answer": true,
+      "concept_groups": [
+        ["snapshot"],
+        ["version", "tuple"],
+        ["concurrent", "transaction"]
+      ]
+    },
+    {
+      "id": "vacuum",
+      "question": "How does VACUUM reclaim dead tuples?",
+      "should_answer": true,
+      "concept_groups": [
+        ["dead tuple", "dead row"],
+        ["reclaim", "reuse"],
+        ["space"]
+      ]
+    },
+    {
+      "id": "wal",
+      "question": "What is write-ahead logging used for?",
+      "should_answer": true,
+      "concept_groups": [
+        ["write-ahead", "wal"],
+        ["log record", "log"],
+        ["recovery", "crash"]
+      ]
+    },
+    {
+      "id": "explain_analyze",
+      "question": "Does EXPLAIN ANALYZE execute the query, and what does it show?",
+      "should_answer": true,
+      "concept_groups": [
+        ["execute", "runs the statement", "run the statement"],
+        ["actual", "runtime", "execution time"],
+        ["row"]
+      ]
+    },
+    {
+      "id": "jsonb_indexing",
+      "question": "How does JSONB indexing work?",
+      "should_answer": true,
+      "concept_groups": [
+        ["jsonb"],
+        ["gin"],
+        ["containment", "key", "operator"]
+      ]
+    },
+    {
+      "id": "weather",
+      "question": "What is the weather in Taipei today?",
+      "should_answer": false,
+      "concept_groups": []
+    },
+    {
+      "id": "cake",
+      "question": "How do I bake chocolate cake?",
+      "should_answer": false,
+      "concept_groups": []
+    }
+  ]
+}
