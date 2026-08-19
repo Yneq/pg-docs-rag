@@ -1,11 +1,16 @@
 import unittest
 
 from app.inference import GenerationResult
-from app.rag import REFUSAL_MESSAGE, RagService, RagSettings
+from app.rag import (
+    REFUSAL_MESSAGE,
+    RagService,
+    RagSettings,
+    expand_postgresql_terms,
+)
 
 
 class FakeCollection:
-    def __init__(self, distance=42.5):
+    def __init__(self, distance=0.25):
         self.distance = distance
 
     def count(self):
@@ -39,7 +44,7 @@ class FakeInference:
         )
 
 
-def make_service(distance=42.5):
+def make_service(distance=0.25):
     inference = FakeInference()
     service = RagService(
         collection=FakeCollection(distance),
@@ -65,7 +70,7 @@ class RagServiceTests(unittest.TestCase):
         self.assertIn("using ONLY the provided context", inference.prompt)
 
     def test_irrelevant_query_refuses_without_generation(self):
-        service, inference = make_service(distance=251)
+        service, inference = make_service(distance=0.61)
 
         result = service.query("What is the weather?")
 
@@ -73,6 +78,17 @@ class RagServiceTests(unittest.TestCase):
         self.assertEqual(result.answer, REFUSAL_MESSAGE)
         self.assertIsNone(result.generation)
         self.assertIsNone(inference.prompt)
+
+    def test_common_postgresql_acronyms_are_expanded_for_retrieval(self):
+        expanded = expand_postgresql_terms("How do MVCC and WAL work?")
+
+        self.assertIn("MVCC (multiversion concurrency control)", expanded)
+        self.assertIn("WAL (write-ahead logging)", expanded)
+
+    def test_existing_full_form_is_not_duplicated(self):
+        question = "How does MVCC multiversion concurrency control work?"
+
+        self.assertEqual(expand_postgresql_terms(question), question)
 
 
 if __name__ == "__main__":

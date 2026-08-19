@@ -7,7 +7,7 @@ interview-friendly pipeline rather than UI complexity or external APIs.
 ## Architecture
 
 ```text
-PostgreSQL docs → clean → chunk → Ollama embeddings → ChromaDB
+PostgreSQL docs → clean → chunk → prefixed Ollama embeddings → ChromaDB
                                                         ↓
 Question → Ollama embedding → retrieve → guardrail → grounded prompt
                                                         ↓
@@ -18,10 +18,11 @@ Question → Ollama embedding → retrieve → guardrail → grounded prompt
 
 Ollama remains the default and is always used for `nomic-embed-text`
 embeddings. Text generation can optionally use Hugging Face Transformers with
-PyTorch and CUDA. Existing Chroma data therefore works with either generation
-backend and does not need to be re-ingested.
+PyTorch and CUDA. Once built with the current embedding pipeline, the same
+Chroma index works with either generation backend and does not need to be
+re-ingested when switching generators.
 
-## Local Inference Environment
+## Reference GPU Benchmark Environment
 
 The following is the deployment/performance environment used to run the
 project. It documents the tested local setup; it is not a separate "GPU version"
@@ -36,6 +37,24 @@ of the project.
 | Model | `llama3.2:latest` |
 | GPU offload | `ollama ps` verified `100% GPU` |
 | Context | 4096 tokens |
+
+### Mac Runtime Validation
+
+The complete API pipeline was also validated on an Apple M1 Mac with 16 GB
+unified memory, Python 3.12.3, Ollama 0.17.5, and the same 4,871-chunk
+PostgreSQL 18.4 corpus. A warm `POST /api/query` request for
+`How does PostgreSQL MVCC work?` produced:
+
+| Retrieval | Generation | Total | Generated tokens | Tokens/s |
+|---:|---:|---:|---:|---:|
+| 0.039 s | 12.051 s | 12.090 s | 198 | 16.430 |
+
+The response was grounded in `mvcc-intro.html`, `routine-vacuuming.html`, and
+`different-replication-solutions.html`. An unrelated chocolate-cake question
+was rejected in 0.128 seconds without invoking the generation model. These Mac
+figures validate the HTTP pipeline and guardrail; they are not directly
+comparable with the CUDA benchmark below because the hardware and generated
+token counts differ.
 
 ## Measured Performance
 
@@ -60,14 +79,20 @@ advantage. Manual inspection found the Transformers answer more closely aligned
 with the retrieved MVCC context, but a repeatable question set and groundedness
 scoring are still needed for a quality conclusion.
 
+These backend figures were captured before normalized, task-prefixed
+embeddings were introduced. They remain useful as a generation-throughput
+comparison because both backends used the same retrieved chunks in that run;
+rerun ingestion and both benchmarks before publishing new end-to-end numbers.
+
 ## Setup
 
-Python 3.10–3.12 is recommended, especially for CUDA/PyTorch package
-compatibility on Windows.
+Python 3.12 is recommended. The default Ollama backend works on Apple Silicon;
+the optional direct Transformers backend in this project currently requires
+NVIDIA CUDA and is not enabled on macOS.
 
-```powershell
-py -3.12 -m venv .venv
-.venv\Scripts\Activate.ps1
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
 python -m pip install --upgrade pip
 pip install -r requirements.txt
 ollama pull nomic-embed-text
@@ -78,7 +103,7 @@ Download the pinned PostgreSQL 18.4 official HTML documentation archive, then
 build the local vector store. The downloader extracts only HTML documentation
 members and records the source URL in a manifest:
 
-```powershell
+```bash
 python scripts/download_docs.py
 ollama pull nomic-embed-text
 python scripts/ingest_docs.py --reset
@@ -94,8 +119,8 @@ Deterministic chunk IDs and Chroma `upsert` make a non-reset rerun safe; use
 The API and CLI share the same retrieval, guardrail, prompt, and inference
 implementation. Start it from the repository root after building the index:
 
-```powershell
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+```bash
+python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Open `http://127.0.0.1:8000/docs` for interactive Swagger documentation. The
@@ -106,19 +131,12 @@ service exposes:
 | `GET` | `/health` | Report backend configuration and indexed chunk count |
 | `POST` | `/api/query` | Retrieve sources, apply the guardrail, and generate an answer |
 
-PowerShell request example:
+Request example:
 
-```powershell
-$body = @{
-  question = "How does PostgreSQL MVCC work?"
-  top_k = 3
-} | ConvertTo-Json
-
-Invoke-RestMethod `
-  -Uri "http://127.0.0.1:8000/api/query" `
-  -Method Post `
-  -ContentType "application/json" `
-  -Body $body
+```bash
+curl -X POST http://127.0.0.1:8000/api/query \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"How does PostgreSQL MVCC work?","top_k":3}'
 ```
 
 The response includes `grounded`, retrieved source metadata, retrieval and
@@ -133,43 +151,42 @@ This local demo does not include authentication or rate limiting. Bind it to
 Run the offline unit and API contract tests without Ollama, Chroma data, or a
 GPU:
 
-```powershell
+```bash
 pip install -r requirements-dev.txt
 python -m unittest discover -s tests -v
 ```
 
 ### Run the API with Docker
 
-Keep Ollama running on the Windows host and start the API container:
+Keep Ollama running on the Mac host and start the API container:
 
-```powershell
+```bash
 docker compose up --build
 ```
 
 The Compose configuration mounts the existing `./chroma` index and connects
 the container to host Ollama through `host.docker.internal`. This path uses the
-default Ollama generation backend; direct CUDA Transformers remains best run
-from the Windows virtual environment unless an NVIDIA container runtime is
-configured.
+default Ollama generation backend. The direct CUDA Transformers option requires
+an NVIDIA environment and is not available on this Apple Silicon host.
 
 ## Run with Ollama (default)
 
 No backend setting is required:
 
-```powershell
+```bash
 python scripts/chat.py
 ```
 
 The bilingual demo is also available:
 
-```powershell
+```bash
 python scripts/demo_rag.py
 ```
 
 To choose another model served by Ollama:
 
-```powershell
-$env:OLLAMA_LLM_MODEL = "llama3.2:latest"
+```bash
+export OLLAMA_LLM_MODEL="llama3.2:latest"
 python scripts/chat.py
 ```
 
@@ -179,7 +196,7 @@ Install the optional dependencies using the PyTorch build appropriate for the
 installed NVIDIA driver/CUDA environment. If a CUDA-enabled PyTorch build is
 already installed, run:
 
-```powershell
+```bash
 pip install -r requirements-transformers.txt
 ```
 
@@ -188,10 +205,10 @@ The default direct-Transformers model is
 fit a 6 GB VRAM target more comfortably. The first run downloads model files
 from Hugging Face.
 
-```powershell
-$env:LLM_BACKEND = "transformers"
-$env:HF_MODEL_ID = "Qwen/Qwen2.5-3B-Instruct"
-$env:HF_LOAD_IN_4BIT = "true"
+```bash
+export LLM_BACKEND="transformers"
+export HF_MODEL_ID="Qwen/Qwen2.5-3B-Instruct"
+export HF_LOAD_IN_4BIT="true"
 python scripts/check_inference.py
 python scripts/chat.py
 ```
@@ -209,7 +226,7 @@ Configuration variables:
 | `CHROMA_PATH` | `./chroma` | Persistent Chroma directory |
 | `CHROMA_COLLECTION` | `pg_docs` | Chroma collection name |
 | `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` | Ollama embedding model |
-| `RAG_DISTANCE_THRESHOLD` | `250` | Maximum accepted nearest-chunk distance |
+| `RAG_DISTANCE_THRESHOLD` | `0.6` | Maximum accepted normalized L2 distance |
 
 `scripts/check_inference.py` validates backend selection without downloading or
 loading the model. The actual chat command verifies CUDA and loads the model on
@@ -234,27 +251,27 @@ recommended starting point.
 Run one backend at a time so the two generation models do not compete for the
 GTX 1660 Ti's 6 GB VRAM. Use exactly the same question for both runs.
 
-```powershell
+```bash
 # 1. Ollama
-$env:LLM_BACKEND = "ollama"
-python scripts/benchmark_rag.py `
-  --question "How does PostgreSQL MVCC work?" `
-  --warmup `
+export LLM_BACKEND="ollama"
+python scripts/benchmark_rag.py \
+  --question "How does PostgreSQL MVCC work?" \
+  --warmup \
   --output results/ollama.json
 
 # Free the Ollama generation model before loading Transformers.
 ollama stop llama3.2
 
 # 2. Transformers
-$env:LLM_BACKEND = "transformers"
-$env:HF_LOAD_IN_4BIT = "true"
-python scripts/benchmark_rag.py `
-  --question "How does PostgreSQL MVCC work?" `
-  --warmup `
+export LLM_BACKEND="transformers"
+export HF_LOAD_IN_4BIT="true"
+python scripts/benchmark_rag.py \
+  --question "How does PostgreSQL MVCC work?" \
+  --warmup \
   --output results/transformers.json
 
 # 3. Print a comparison table
-python scripts/compare_benchmarks.py `
+python scripts/compare_benchmarks.py \
   results/ollama.json results/transformers.json
 ```
 
@@ -305,6 +322,15 @@ answer and refuses unrelated questions. Retrieved chunks are labeled in a
 prompt that tells the model to answer only from the supplied PostgreSQL context
 and cite `[Source N]`. The API returns each source's title, file, chunk index,
 and distance so clients can inspect the evidence.
+
+`nomic-embed-text` receives its required retrieval task prefixes:
+`search_document:` during ingestion and `search_query:` during retrieval. The
+current Ollama `/api/embed` endpoint returns normalized vectors, making the
+distance threshold stable and interpretable. Common PostgreSQL acronyms such as
+MVCC, WAL, CTE, PITR, and HOT are expanded before query embedding so terse
+technical questions retrieve their full-form documentation. Rebuild an index
+created by an older project version with
+`python scripts/ingest_docs.py --reset` before using the API.
 
 This remains a local RAG prototype: it demonstrates document cleaning,
 chunking, embeddings, vector retrieval, grounded generation, selectable local

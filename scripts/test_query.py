@@ -1,35 +1,16 @@
-import ollama
-import chromadb
-from chromadb.config import Settings
+from pathlib import Path
+import sys
 
-chroma = chromadb.Client(Settings(
-    persist_directory="./chroma",
-    is_persistent=True
-))
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-collection = chroma.get_or_create_collection("pg_docs")
-
-def retrieve(query, k=3):
-    response = ollama.embeddings(
-        model="nomic-embed-text",
-        prompt=query
-    )
-    query_embedding = response["embedding"]
-
-    results = collection.query(
-        query_embeddings=[query_embedding],
-        n_results=k,
-        include=["documents", "distances"]
-    )
-    
-    print(results["distances"])
-    return results["documents"][0]
+from app.rag import create_rag_service
 
 
 if __name__ == "__main__":
     question = "What does SELECT do in PostgreSQL?"
-    docs = retrieve(question)
+    chunks = create_rag_service().retrieve(question)
+    print([chunk.distance for chunk in chunks])
 
-    for i, doc in enumerate(docs):
+    for i, chunk in enumerate(chunks):
         print(f"\n--- Result {i+1} ---\n")
-        print(doc[:500])
+        print(chunk.document[:500])

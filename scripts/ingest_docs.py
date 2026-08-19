@@ -78,7 +78,6 @@ def main() -> None:
 
     pending_ids: list[str] = []
     pending_documents: list[str] = []
-    pending_embeddings: list[list[float]] = []
     pending_metadata: list[dict[str, str | int]] = []
     indexed = 0
 
@@ -86,16 +85,19 @@ def main() -> None:
         nonlocal indexed
         if not pending_ids:
             return
+        response = ollama.embed(
+            model=args.embedding_model,
+            input=[f"search_document: {text}" for text in pending_documents],
+        )
         collection.upsert(
             ids=pending_ids,
             documents=pending_documents,
-            embeddings=pending_embeddings,
+            embeddings=response["embeddings"],
             metadatas=pending_metadata,
         )
         indexed += len(pending_ids)
         pending_ids.clear()
         pending_documents.clear()
-        pending_embeddings.clear()
         pending_metadata.clear()
         print(f"Indexed {indexed} chunks...", flush=True)
 
@@ -106,10 +108,8 @@ def main() -> None:
         relative_source = str(path.relative_to(args.input) if args.input.is_dir() else path.name)
 
         for chunk_index, chunk in enumerate(chunks):
-            response = ollama.embeddings(model=args.embedding_model, prompt=chunk)
             pending_ids.append(stable_chunk_id(relative_source, chunk_index, chunk))
             pending_documents.append(chunk)
-            pending_embeddings.append(response["embedding"])
             pending_metadata.append(
                 {
                     "source": relative_source,

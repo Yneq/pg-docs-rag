@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import os
+import re
 from threading import Lock
 import time
 from typing import Any, Callable
@@ -20,13 +21,37 @@ REFUSAL_MESSAGE = (
     "I could not find relevant information in the PostgreSQL documentation."
 )
 
+QUERY_TERM_EXPANSIONS = {
+    "MVCC": "multiversion concurrency control",
+    "WAL": "write-ahead logging",
+    "CTE": "common table expression",
+    "PITR": "point-in-time recovery",
+    "HOT": "heap-only tuple",
+}
+
+
+def expand_postgresql_terms(question: str) -> str:
+    """Add full forms for common PostgreSQL acronyms before embedding."""
+    expanded = question
+    lowered = question.lower()
+    for acronym, full_form in QUERY_TERM_EXPANSIONS.items():
+        if full_form in lowered:
+            continue
+        expanded = re.sub(
+            rf"\b{re.escape(acronym)}\b",
+            f"{acronym} ({full_form})",
+            expanded,
+            flags=re.IGNORECASE,
+        )
+    return expanded
+
 
 @dataclass(frozen=True)
 class RagSettings:
     chroma_path: str = "./chroma"
     collection_name: str = "pg_docs"
     embedding_model: str = "nomic-embed-text"
-    distance_threshold: float = 250.0
+    distance_threshold: float = 0.6
 
     @classmethod
     def from_env(cls) -> "RagSettings":
@@ -37,7 +62,7 @@ class RagSettings:
                 "OLLAMA_EMBEDDING_MODEL", "nomic-embed-text"
             ),
             distance_threshold=float(
-                os.getenv("RAG_DISTANCE_THRESHOLD", "250")
+                os.getenv("RAG_DISTANCE_THRESHOLD", "0.6")
             ),
         )
 
@@ -186,11 +211,11 @@ def create_rag_service() -> RagService:
     collection = chroma.get_or_create_collection(settings.collection_name)
 
     def embed_query(question: str) -> list[float]:
-        response = ollama.embeddings(
+        response = ollama.embed(
             model=settings.embedding_model,
-            prompt=question,
+            input=f"search_query: {expand_postgresql_terms(question)}",
         )
-        return response["embedding"]
+        return response["embeddings"][0]
 
     return RagService(
         collection=collection,
