@@ -1,3 +1,5 @@
+[English](README.md) | [繁體中文](README.zh-TW.md)
+
 # pg-docs-rag
 
 [![CI](https://github.com/Yneq/pg-docs-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/Yneq/pg-docs-rag/actions/workflows/ci.yml)
@@ -24,7 +26,7 @@ PyTorch and CUDA. Once built with the current embedding pipeline, the same
 Chroma index works with either generation backend and does not need to be
 re-ingested when switching generators.
 
-## Reference GPU Benchmark Environment
+## Local Inference Environment
 
 The following is the deployment/performance environment used to run the
 project. It documents the tested local setup; it is not a separate "GPU version"
