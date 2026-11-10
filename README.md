@@ -1,5 +1,18 @@
 [English](README.md) | [繁體中文](README.zh-TW.md)
 
+## Results
+
+On a fixed 20-question test set, **Hit@3 improved from 80% → 100%**
+after adding hybrid retrieval.
+
+## Tech Highlights
+
+- **Hybrid retrieval**: vector search + BM25, merged with Reciprocal Rank Fusion (RRF)
+- **Why hybrid**: vector search alone missed technical abbreviations; BM25 fixes exact-term matches
+- **Eval-driven**: fixed question set, measured before/after every retrieval change
+- **Stack**: PostgreSQL, Python (HTML docs ingestion)
+- **Known limitation**: HTML only for now; scanned/PDF (OCR) support is planned
+  
 # pg-docs-rag
 
 [![CI](https://github.com/Yneq/pg-docs-rag/actions/workflows/ci.yml/badge.svg)](https://github.com/Yneq/pg-docs-rag/actions/workflows/ci.yml)
